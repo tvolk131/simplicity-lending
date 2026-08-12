@@ -13,6 +13,7 @@ import { MnemonicInput } from '@/components/MnemonicInput'
 import { UiButton } from '@/components/ui/UiButton'
 import { UiModal } from '@/components/ui/UiModal'
 import { env } from '@/constants/env'
+import { getApogeeIcon } from '@/lib/liquid-provider/discovery'
 import { DEFAULT_WALLET_TYPE } from '@/lib/wallet-core/types'
 import { useWallet } from '@/providers/wallet/useWallet'
 
@@ -72,6 +73,7 @@ export function ConnectWalletModal({ isOpen, onOpenChange }: ConnectWalletModalP
   const [jadeConnecting, setJadeConnecting] = useState(false)
   const [sideswapConnecting, setSideswapConnecting] = useState(false)
   const [apogeeConnecting, setApogeeConnecting] = useState(false)
+  const [apogeeIcon, setApogeeIcon] = useState<string | null>(null)
   const [wasOpen, setWasOpen] = useState(isOpen)
 
   // Reset to the picker on open, unless a SideSwap login is still pending.
@@ -90,6 +92,20 @@ export function ConnectWalletModal({ isOpen, onOpenChange }: ConnectWalletModalP
       onOpenChange(false)
     }
   }, [isOpen, connectionStatus, onOpenChange])
+
+  const showApogee = env.VITE_NETWORK === 'liquidtestnet' || env.VITE_NETWORK === 'regtest'
+  // Pre-fetch the icon Apogee advertises so the option card can show the real
+  // logo instead of the generic fallback. No-op when the card isn't shown.
+  useEffect(() => {
+    if (!isOpen || !showApogee) return
+    let cancelled = false
+    void getApogeeIcon().then(icon => {
+      if (!cancelled) setApogeeIcon(icon)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [isOpen, showApogee])
 
   const handleJadeConnect = async () => {
     if (jadeConnecting) return
@@ -180,9 +196,15 @@ export function ConnectWalletModal({ isOpen, onOpenChange }: ConnectWalletModalP
     >
       {mode === 'choose' ? (
         <div className='flex flex-col gap-3'>
-          {(env.VITE_NETWORK === 'liquidtestnet' || env.VITE_NETWORK === 'regtest') && (
+          {showApogee && (
             <ConnectOptionCard
-              icon={<ApogeeIcon className='size-6 text-white' />}
+              icon={
+                apogeeIcon ? (
+                  <img src={apogeeIcon} alt='' className='size-full rounded-full' />
+                ) : (
+                  <ApogeeIcon className='size-6 text-white' />
+                )
+              }
               iconBadgeClassName='bg-accent'
               title='Apogee'
               subtitle='Borrow and lend through the Apogee browser wallet'

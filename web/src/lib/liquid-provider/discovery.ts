@@ -49,3 +49,17 @@ export async function discoverApogeeProvider(
 export function forgetApogeeProvider(): void {
   cachedApogee = null
 }
+
+/**
+ * Resolves the icon Apogee advertises for itself during provider discovery, or
+ * `null` if Apogee is not installed. Reuses the discovery cache, so calling this
+ * before connect also primes the provider for the subsequent `connectApogee()`.
+ */
+export async function getApogeeIcon(): Promise<string | null> {
+  try {
+    const { info } = await discoverApogeeProvider()
+    return info.icon
+  } catch {
+    return null
+  }
+}
